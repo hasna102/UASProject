@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Klasifikasi Tingkat Kecanduan Smartphone</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:           #f5f4f8;
+      --surface:      #ffffff;
+      --surface-2:    #f0eef7;
+      --border:       #e4e1f0;
+      --primary:      #6c63b0;
+      --primary-light:#8b84cc;
+      --primary-soft: #ece9f9;
+      --text:         #1e1a36;
+      --muted:        #7a748e;
+      --mild:         #3caa7e;
+      --mild-soft:    #d4f4ea;
+      --moderate:     #e0913a;
+      --moderate-soft:#fdecd7;
+      --severe:       #d95252;
+      --severe-soft:  #fde0e0;
+      --radius:       14px;
+      --radius-sm:    8px;
+      --shadow:       0 2px 12px rgba(108,99,176,.08);
+      --shadow-md:    0 4px 24px rgba(108,99,176,.13);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(140deg, #5047a0 0%, #7c6fd4 55%, #a28be0 100%);
+      padding: 3rem 1.5rem 2.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='1.5' fill='rgba(255,255,255,0.08)'/%3E%3C/svg%3E") repeat;
+      pointer-events: none;
+    }
+    .header-icon {
+      width: 56px; height: 56px;
+      background: rgba(255,255,255,.18);
+      border-radius: 16px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 1.7rem;
+      margin-bottom: 1rem;
+      backdrop-filter: blur(4px);
+    }
+    header h1 {
+      font-size: clamp(1.35rem, 3vw, 1.9rem);
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -.02em;
+      line-height: 1.25;
+    }
+    header p {
+      margin-top: .6rem;
+      color: rgba(255,255,255,.75);
+      font-size: .88rem;
+      font-weight: 400;
+    }
+    .header-chips {
+      display: flex; justify-content: center; gap: .5rem;
+      flex-wrap: wrap; margin-top: 1rem;
+    }
+    .chip {
+      background: rgba(255,255,255,.15);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,.25);
+      color: #fff; font-size: .75rem; font-weight: 600;
+      padding: .3rem .8rem; border-radius: 99px;
+    }
+
+    /* ── LAYOUT ── */
+    .container { max-width: 1080px; margin: 0 auto; padding: 1.8rem 1.2rem 3rem; }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex; gap: .4rem; flex-wrap: wrap;
+      background: var(--surface);
+      padding: .45rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      margin-bottom: 1.6rem;
+    }
+    .tab-btn {
+      flex: 1; min-width: 110px;
+      padding: .58rem .9rem;
+      border-radius: 10px;
+      border: none; cursor: pointer;
+      font-family: inherit;
+      font-size: .83rem; font-weight: 600;
+      color: var(--muted);
+      background: transparent;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { background: var(--surface-2); color: var(--primary); }
+    .tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 2px 8px rgba(108,99,176,.35); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeUp .25s ease; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-header {
+      display: flex; align-items: center; gap: .65rem;
+      margin-bottom: 1.3rem;
+      padding-bottom: .9rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-icon {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: var(--primary-soft);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .card-title {
+      font-size: 1rem; font-weight: 700;
+      color: var(--text); letter-spacing: -.01em;
+    }
+    .card-sub {
+      font-size: .78rem; color: var(--muted); margin-top: .1rem;
+    }
+
+    /* ── FORM ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+    .form-group { display: flex; flex-direction: column; gap: .35rem; }
+    .form-group label {
+      font-size: .78rem; font-weight: 600;
+      color: var(--muted); letter-spacing: .01em;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: .6rem .85rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit; font-size: .88rem;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+      transition: border-color .18s, box-shadow .18s;
+      appearance: none;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(108,99,176,.12);
+    }
+    .form-group select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237a748e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right .85rem center;
+      padding-right: 2rem;
+    }
+
+    .btn-predict {
+      margin-top: 1.4rem;
+      padding: .72rem 2rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: inherit; font-size: .92rem; font-weight: 700;
+      cursor: pointer;
+      display: inline-flex; align-items: center; gap: .5rem;
+      transition: background .18s, transform .12s, box-shadow .18s;
+      box-shadow: 0 3px 12px rgba(108,99,176,.3);
+    }
+    .btn-predict:hover { background: #5a52a0; transform: translateY(-1px); box-shadow: 0 5px 18px rgba(108,99,176,.38); }
+    .btn-predict:active { transform: translateY(0); }
+
+    /* ── RESULT ── */
+    #result-section { display: none; }
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 1rem;
+    }
+    .result-card {
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 1.3rem;
+      background: var(--surface);
+      position: relative; overflow: hidden;
+    }
+    .result-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 4px;
+    }
+    .result-card.mild::before   { background: var(--mild); }
+    .result-card.moderate::before { background: var(--moderate); }
+    .result-card.severe::before { background: var(--severe); }
+
+    .model-tag {
+      display: inline-flex; align-items: center; gap: .3rem;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: .72rem; font-weight: 700;
+      padding: .25rem .65rem; border-radius: 99px;
+      margin-bottom: .75rem;
+    }
+    .pred-label {
+      font-size: 1.25rem; font-weight: 700;
+      margin-bottom: .9rem;
+      letter-spacing: -.01em;
+    }
+    .pred-label.mild     { color: var(--mild); }
+    .pred-label.moderate { color: var(--moderate); }
+    .pred-label.severe   { color: var(--severe); }
+
+    .prob-row { margin-bottom: .55rem; }
+    .prob-head {
+      display: flex; justify-content: space-between;
+      font-size: .75rem; font-weight: 600; color: var(--muted);
+      margin-bottom: .25rem;
+    }
+    .bar-track {
+      background: var(--surface-2);
+      border-radius: 99px; height: 7px; overflow: hidden;
+    }
+    .bar-fill { height: 100%; border-radius: 99px; transition: width .6s cubic-bezier(.16,1,.3,1); }
+    .bar-mild     { background: var(--mild); }
+    .bar-moderate { background: var(--moderate); }
+    .bar-severe   { background: var(--severe); }
+
+    /* ── METRICS ── */
+    .metrics-row {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: .75rem; margin-bottom: 1.3rem;
+    }
+    .metric-card {
+      background: var(--surface-2);
+      border-radius: 10px;
+      padding: .9rem 1rem;
+      text-align: center;
+    }
+    .metric-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 1.5rem; font-weight: 500;
+      color: var(--primary);
+      letter-spacing: -.02em;
+    }
+    .metric-lbl {
+      font-size: .72rem; color: var(--muted);
+      margin-top: .25rem; font-weight: 500;
+    }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    thead th {
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: .73rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .04em;
+      padding: .65rem .9rem; text-align: center;
+    }
+    thead th:first-child { text-align: left; }
+    tbody td {
+      padding: .6rem .9rem;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      color: var(--text);
+    }
+    tbody td:first-child { text-align: left; color: var(--muted); }
+    tbody tr:hover td { background: #faf9fe; }
+    .cm-diag { background: #e8f7f1; color: var(--mild); font-weight: 700; }
+
+    /* ── BADGE ── */
+    .badge {
+      display: inline-block; padding: .2rem .65rem;
+      border-radius: 99px; font-size: .72rem; font-weight: 700;
+    }
+    .badge-best { background: var(--mild-soft); color: #1e7d56; }
+    .badge-mid  { background: var(--moderate-soft); color: #a0601c; }
+    .badge-low  { background: var(--severe-soft); color: #a83232; }
+
+    /* ── CHARTS ── */
+    .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+    .chart-box {
+      background: var(--surface-2);
+      border-radius: 12px; padding: 1.2rem;
+    }
+    .chart-box p {
+      font-size: .78rem; font-weight: 700;
+      color: var(--muted); margin-bottom: .75rem;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+
+    /* ── INFO CARDS (Tentang) ── */
+    .info-list { display: flex; flex-direction: column; gap: 0; }
+    .info-row {
+      display: flex; gap: 1rem;
+      padding: .65rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .85rem;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-key { color: var(--muted); font-weight: 600; min-width: 160px; flex-shrink: 0; }
+    .info-val { color: var(--text); }
+
+    /* ── ALGO CARDS ── */
+    .algo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+    .algo-card {
+      background: var(--surface-2);
+      border-radius: 12px; padding: 1.1rem;
+      border: 1px solid var(--border);
+    }
+    .algo-name {
+      font-size: .9rem; font-weight: 700; color: var(--primary);
+      margin-bottom: .3rem;
+    }
+    .algo-param {
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem; color: var(--muted);
+      margin-bottom: .5rem;
+    }
+    .algo-desc { font-size: .82rem; color: var(--text); line-height: 1.5; }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--muted);
+      margin-bottom: .7rem; margin-top: 1.1rem;
+    }
+
+    /* ── DIVIDER ── */
+    .divider { height: 1px; background: var(--border); margin: 1.1rem 0; }
+
+    /* ── LOADING ── */
+    #loading-overlay {
+      position: fixed; inset: 0;
+      background: rgba(245,244,248,.85);
+      backdrop-filter: blur(6px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 999;
+    }
+    .spinner-ring {
+      width: 44px; height: 44px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-overlay p { color: var(--muted); font-size: .88rem; font-weight: 500; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 680px) {
+      .chart-row { grid-template-columns: 1fr; }
+      .metrics-row { grid-template-columns: repeat(3, 1fr); }
+      .form-grid { grid-template-columns: 1fr 1fr; }
+      .result-grid { grid-template-columns: 1fr; }
+      header h1 { font-size: 1.25rem; }
+      .tabs { gap: .25rem; }
+      .tab-btn { font-size: .76rem; padding: .5rem .6rem; min-width: 80px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <div class="spinner-ring"></div>
+  <p>Melatih model ML, mohon tunggu…</p>
+</div>
+
+<header>
+  <div class="header-icon">📱</div>
+  <h1>Klasifikasi Tingkat Kecanduan Smartphone</h1>
+  <p>Penelitian — UIN Maulana Malik Ibrahim Malang</p>
+  <div class="header-chips">
+    <span class="chip">🌲 Random Forest</span>
+    <span class="chip">🔵 KNN</span>
+    <span class="chip">🌿 Decision Tree</span>
+    <span class="chip">7.500 data</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('prediksi', this)">🔍 Prediksi</button>
+    <button class="tab-btn" onclick="showTab('evaluasi', this)">📊 Evaluasi</button>
+    <button class="tab-btn" onclick="showTab('perbandingan', this)">📈 Perbandingan</button>
+    <button class="tab-btn" onclick="showTab('tentang', this)">ℹ️ Dataset</button>
+  </div>
+
+  <!-- ══════════════════════ TAB 1 – PREDIKSI ══════════════════════ -->
+  <div id="tab-prediksi" class="tab-content active">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">🧑‍💻</div>
+        <div>
+          <div class="card-title">Input Data Pengguna</div>
+          <div class="card-sub">Isi semua kolom, lalu klik Prediksi</div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Usia (tahun)</label>
+          <input type="number" id="age" min="18" max="35" value="22" />
+        </div>
+        <div class="form-group">
+          <label>Screen Time Harian (jam)</label>
+          <input type="number" id="daily_screen_time_hours" min="3" max="12" step="0.1" value="8.0" />
+        </div>
+        <div class="form-group">
+          <label>Media Sosial per Hari (jam)</label>
+          <input type="number" id="social_media_hours" min="0" max="10" step="0.1" value="3.5" />
+        </div>
+        <div class="form-group">
+          <label>Gaming per Hari (jam)</label>
+          <input type="number" id="gaming_hours" min="0" max="10" step="0.1" value="1.5" />
+        </div>
+        <div class="form-group">
+          <label>Belajar / Kerja per Hari (jam)</label>
+          <input type="number" id="work_study_hours" min="0" max="12" step="0.1" value="4.0" />
+        </div>
+        <div class="form-group">
+          <label>Tidur per Hari (jam)</label>
+          <input type="number" id="sleep_hours" min="4" max="10" step="0.1" value="6.5" />
+        </div>
+        <div class="form-group">
+          <label>Notifikasi per Hari</label>
+          <input type="number" id="notifications_per_day" min="20" max="250" value="130" />
+        </div>
+        <div class="form-group">
+          <label>Buka Aplikasi per Hari</label>
+          <input type="number" id="app_opens_per_day" min="15" max="180" value="80" />
+        </div>
+        <div class="form-group">
+          <label>Screen Time Akhir Pekan (jam)</label>
+          <input type="number" id="weekend_screen_time" min="3" max="15" step="0.1" value="10.0" />
+        </div>
+        <div class="form-group">
+          <label>Tingkat Stres</label>
+          <select id="stress_level">
+            <option value="0">😊 Low — Rendah</option>
+            <option value="1" selected>😐 Medium — Sedang</option>
+            <option value="2">😰 High — Tinggi</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Dampak pada Akademik / Pekerjaan</label>
+          <select id="academic_work_impact">
+            <option value="0">Tidak (No)</option>
+            <option value="1" selected>Ya (Yes)</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-predict" onclick="predict()">
+        <span>🚀</span> Prediksi Sekarang
+      </button>
+    </div>
+
+    <!-- HASIL -->
+    <div id="result-section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">📋</div>
+          <div>
+            <div class="card-title">Hasil Prediksi</div>
+            <div class="card-sub">Perbandingan hasil dari tiga algoritma</div>
+          </div>
+        </div>
+        <div class="result-grid" id="result-cards"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ TAB 2 – EVALUASI ══════════════════════ -->
+  <div id="tab-evaluasi" class="tab-content">
+    {% for model_name, res in results.items() %}
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">
+          {% if model_name == 'Random Forest' %}🌲
+          {% elif model_name == 'KNN' %}🔵
+          {% else %}🌿{% endif %}
+        </div>
+        <div>
+          <div class="card-title">
+            {{ model_name }}
+            {% if res.accuracy == results.values()|map(attribute='accuracy')|max %}
+              <span class="badge badge-best" style="margin-left:.5rem">🏆 Terbaik</span>
+            {% endif %}
+          </div>
+          <div class="card-sub">Hasil evaluasi pada test set (80:20 split)</div>
+        </div>
+      </div>
+
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-val">{{ res.accuracy }}%</div>
+          <div class="metric-lbl">Akurasi</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val">{{ res.cv_mean }}%</div>
+          <div class="metric-lbl">CV Accuracy (5-Fold)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val">±{{ res.cv_std }}%</div>
+          <div class="metric-lbl">Standar Deviasi CV</div>
+        </div>
+      </div>
+
+      <p class="section-label">Classification Report</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Kelas</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cls in ['Mild', 'Moderate', 'Severe'] %}
+            <tr>
+              <td><strong>{{ cls }}</strong></td>
+              <td>{{ "%.2f"|format(res.classification_report[cls]['precision']) }}</td>
+              <td>{{ "%.2f"|format(res.classification_report[cls]['recall']) }}</td>
+              <td>{{ "%.2f"|format(res.classification_report[cls]['f1-score']) }}</td>
+              <td>{{ res.classification_report[cls]['support']|int }}</td>
+            </tr>
+            {% endfor %}
+            <tr style="font-weight:700">
+              <td>Weighted Avg</td>
+              <td>{{ "%.2f"|format(res.classification_report['weighted avg']['precision']) }}</td>
+              <td>{{ "%.2f"|format(res.classification_report['weighted avg']['recall']) }}</td>
+              <td>{{ "%.2f"|format(res.classification_report['weighted avg']['f1-score']) }}</td>
+              <td>{{ res.classification_report['weighted avg']['support']|int }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="section-label" style="margin-top:1.2rem">Confusion Matrix</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Aktual \ Prediksi</th>
+              <th>Mild</th><th>Moderate</th><th>Severe</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i, row_label in [(0,'Mild'),(1,'Moderate'),(2,'Severe')] %}
+            <tr>
+              <td><strong>{{ row_label }}</strong></td>
+              {% for j in range(3) %}
+              <td class="{% if i==j %}cm-diag{% endif %}">
+                {{ res.confusion_matrix[i][j] }}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ══════════════════════ TAB 3 – PERBANDINGAN ══════════════════════ -->
+  <div id="tab-perbandingan" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📈</div>
+        <div>
+          <div class="card-title">Perbandingan Akurasi Model</div>
+          <div class="card-sub">Test set vs Cross-validation (5-Fold)</div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-box">
+          <p>Akurasi Test Set</p>
+          <canvas id="chartAccuracy"></canvas>
+        </div>
+        <div class="chart-box">
+          <p>CV Accuracy (5-Fold)</p>
+          <canvas id="chartCV"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📋</div>
+        <div>
+          <div class="card-title">Ringkasan Perbandingan</div>
+          <div class="card-sub">Karakteristik masing-masing algoritma</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Aspek</th>
+              <th>Random Forest</th>
+              <th>KNN (K=20)</th>
+              <th>Decision Tree</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Akurasi (Test Set)</td>
+              <td>{{ results['Random Forest'].accuracy }}%</td>
+              <td>{{ results['KNN'].accuracy }}%</td>
+              <td>{{ results['Decision Tree'].accuracy }}%</td>
+            </tr>
+            <tr>
+              <td>CV Accuracy (5-Fold)</td>
+              <td>{{ results['Random Forest'].cv_mean }}% ±{{ results['Random Forest'].cv_std }}%</td>
+              <td>{{ results['KNN'].cv_mean }}% ±{{ results['KNN'].cv_std }}%</td>
+              <td>{{ results['Decision Tree'].cv_mean }}% ±{{ results['Decision Tree'].cv_std }}%</td>
+            </tr>
+            <tr>
+              <td>Model Terbaik?</td>
+              <td><span class="badge badge-best">🏆 Ya</span></td>
+              <td><span class="badge badge-low">Tidak</span></td>
+              <td><span class="badge badge-mid">Mendekati RF</span></td>
+            </tr>
+            <tr>
+              <td>Kelas Terbaik Diprediksi</td>
+              <td>Mild</td><td>Mild</td><td>Mild</td>
+            </tr>
+            <tr>
+              <td>Kelas Terlemah</td>
+              <td>Moderate</td><td>Severe</td><td>Moderate</td>
+            </tr>
+            <tr>
+              <td>Karakteristik</td>
+              <td>Stabil & konsisten</td>
+              <td>Sensitif terhadap jarak data</td>
+              <td>Mudah diinterpretasikan</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ TAB 4 – DATASET ══════════════════════ -->
+  <div id="tab-tentang" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📁</div>
+        <div>
+          <div class="card-title">Informasi Dataset</div>
+          <div class="card-sub">Smartphone Usage And Addiction Analysis</div>
+        </div>
+      </div>
+      <div class="info-list">
+        <div class="info-row"><span class="info-key">Nama Dataset</span><span class="info-val">Smartphone Usage And Addiction Analysis 7500 Rows.csv</span></div>
+        <div class="info-row"><span class="info-key">Sumber Data</span><span class="info-val">Kaggle</span></div>
+        <div class="info-row"><span class="info-key">Jumlah Baris (awal)</span><span class="info-val">7.500 baris</span></div>
+        <div class="info-row"><span class="info-key">Jumlah Kolom</span><span class="info-val">16 kolom</span></div>
+        <div class="info-row"><span class="info-key">Jenis Masalah</span><span class="info-val">Multi-Class Classification</span></div>
+        <div class="info-row"><span class="info-key">Variabel Target</span><span class="info-val">addiction_level (Mild / Moderate / Severe)</span></div>
+        <div class="info-row"><span class="info-key">Setelah Cleaning</span><span class="info-val">6.681 baris — 819 baris dihapus karena missing value pada target</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📝</div>
+        <div>
+          <div class="card-title">Kolom Dataset</div>
+          <div class="card-sub">16 fitur digunakan dalam pemodelan</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th style="text-align:center">No</th><th>Nama Kolom</th><th>Penjelasan</th></tr>
+          </thead>
+          <tbody>
+            <tr><td style="text-align:center">1</td><td>transaction_id</td><td>ID unik setiap transaksi</td></tr>
+            <tr><td style="text-align:center">2</td><td>user_id</td><td>ID unik pengguna</td></tr>
+            <tr><td style="text-align:center">3</td><td>age</td><td>Usia pengguna (18–35 tahun)</td></tr>
+            <tr><td style="text-align:center">4</td><td>gender</td><td>Jenis kelamin (Male / Female / Other)</td></tr>
+            <tr><td style="text-align:center">5</td><td>daily_screen_time_hours</td><td>Total jam layar aktif per hari (3–12 jam)</td></tr>
+            <tr><td style="text-align:center">6</td><td>social_media_hours</td><td>Jam penggunaan media sosial per hari</td></tr>
+            <tr><td style="text-align:center">7</td><td>gaming_hours</td><td>Jam bermain game per hari</td></tr>
+            <tr><td style="text-align:center">8</td><td>work_study_hours</td><td>Jam belajar atau bekerja per hari</td></tr>
+            <tr><td style="text-align:center">9</td><td>sleep_hours</td><td>Jam tidur per hari (4.5–9 jam)</td></tr>
+            <tr><td style="text-align:center">10</td><td>notifications_per_day</td><td>Jumlah notifikasi masuk per hari (20–250)</td></tr>
+            <tr><td style="text-align:center">11</td><td>app_opens_per_day</td><td>Berapa kali membuka aplikasi per hari (15–180)</td></tr>
+            <tr><td style="text-align:center">12</td><td>weekend_screen_time</td><td>Jam layar aktif saat akhir pekan</td></tr>
+            <tr><td style="text-align:center">13</td><td>stress_level</td><td>Tingkat stres (Low / Medium / High)</td></tr>
+            <tr><td style="text-align:center">14</td><td>academic_work_impact</td><td>Apakah berdampak pada akademik / pekerjaan? (Yes / No)</td></tr>
+            <tr><td style="text-align:center">15</td><td><strong>addiction_level</strong></td><td><strong>Tingkat kecanduan — TARGET PREDIKSI (Mild / Moderate / Severe)</strong></td></tr>
+            <tr><td style="text-align:center">16</td><td>addicted_label</td><td>Label biner: 0 = tidak kecanduan, 1 = kecanduan</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">⚙️</div>
+        <div>
+          <div class="card-title">Algoritma yang Digunakan</div>
+          <div class="card-sub">Tiga model klasifikasi dilatih dan dibandingkan</div>
+        </div>
+      </div>
+      <div class="algo-grid">
+        <div class="algo-card">
+          <div class="algo-name">🌲 Random Forest</div>
+          <div class="algo-param">n_estimators=100, random_state=42</div>
+          <div class="algo-desc">Ensemble dari 100 pohon keputusan yang bekerja paralel — stabil, tahan overfitting, dan sangat akurat.</div>
+        </div>
+        <div class="algo-card">
+          <div class="algo-name">🌿 Decision Tree</div>
+          <div class="algo-param">random_state=42</div>
+          <div class="algo-desc">Satu pohon keputusan; mudah divisualisasikan dan diinterpretasikan oleh manusia.</div>
+        </div>
+        <div class="algo-card">
+          <div class="algo-name">🔵 K-Nearest Neighbor</div>
+          <div class="algo-param">n_neighbors=20</div>
+          <div class="algo-desc">Mengklasifikasikan berdasarkan 20 tetangga terdekat; sensitif terhadap skala data (MinMax digunakan).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── HIDE OVERLAY ON LOAD ──
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const ov = document.getElementById('loading-overlay');
+    ov.style.opacity = '0';
+    ov.style.transition = 'opacity .4s';
+    setTimeout(() => ov.style.display = 'none', 400);
+  }, 600);
+});
+
+// ── TAB SWITCHING ──
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'perbandingan') renderCharts();
+}
+
+// ── PREDICTION ──
+async function predict() {
+  const fields = [
+    'daily_screen_time_hours','social_media_hours','gaming_hours',
+    'work_study_hours','sleep_hours','notifications_per_day',
+    'app_opens_per_day','weekend_screen_time','stress_level',
+    'academic_work_impact','age'
+  ];
+  const data = {};
+  for (const f of fields) data[f] = document.getElementById(f).value;
+
+  const btn = document.querySelector('.btn-predict');
+  btn.textContent = '⏳ Memproses…';
+  btn.disabled = true;
+
+  try {
+    const res  = await fetch('/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!json.success) { alert('Error: ' + json.error); return; }
+    renderResults(json.predictions);
+    document.getElementById('result-section').style.display = 'block';
+    document.getElementById('result-section').scrollIntoView({ behavior:'smooth', block:'start' });
+  } finally {
+    btn.innerHTML = '<span>🚀</span> Prediksi Sekarang';
+    btn.disabled = false;
+  }
+}
+
+function levelClass(pred) {
+  if (pred.includes('Mild'))     return 'mild';
+  if (pred.includes('Moderate')) return 'moderate';
+  return 'severe';
+}
+
+function renderResults(preds) {
+  const container = document.getElementById('result-cards');
+  container.innerHTML = '';
+
+  for (const [model, info] of Object.entries(preds)) {
+    const cc = levelClass(info.prediction);
+    const card = document.createElement('div');
+    card.className = `result-card ${cc}`;
+    card.innerHTML = `
+      <div class="model-tag">🤖 ${model}</div>
+      <div class="pred-label ${cc}">${info.prediction}</div>
+      <div class="prob-row">
+        <div class="prob-head"><span>Mild</span><span>${info.probabilities.Mild}%</span></div>
+        <div class="bar-track"><div class="bar-fill bar-mild" style="width:${info.probabilities.Mild}%"></div></div>
+      </div>
+      <div class="prob-row">
+        <div class="prob-head"><span>Moderate</span><span>${info.probabilities.Moderate}%</span></div>
+        <div class="bar-track"><div class="bar-fill bar-moderate" style="width:${info.probabilities.Moderate}%"></div></div>
+      </div>
+      <div class="prob-row">
+        <div class="prob-head"><span>Severe</span><span>${info.probabilities.Severe}%</span></div>
+        <div class="bar-track"><div class="bar-fill bar-severe" style="width:${info.probabilities.Severe}%"></div></div>
+      </div>
+    `;
+    container.appendChild(card);
+  }
+}
+
+// ── CHARTS ──
+let chartsRendered = false;
+function renderCharts() {
+  if (chartsRendered) return;
+  chartsRendered = true;
+
+  const results = {{ results | tojson }};
+  const labels  = Object.keys(results);
+  const acc     = labels.map(k => results[k].accuracy);
+  const cvMean  = labels.map(k => results[k].cv_mean);
+
+  const palette = ['#6c63b0','#e0913a','#3caa7e'];
+  const paletteLight = ['#ece9f9','#fdecd7','#d4f4ea'];
+
+  const commonOpts = {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        beginAtZero: false, min: 60, max: 100,
+        grid: { color: '#ede9f8' },
+        ticks: { font: { size: 11 }, color: '#7a748e' }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { font: { size: 11, weight: '600' }, color: '#1e1a36' }
+      }
+    }
+  };
+
+  new Chart(document.getElementById('chartAccuracy'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: acc,
+        backgroundColor: palette,
+        borderRadius: 10,
+        borderSkipped: false,
+      }]
+    },
+    options: commonOpts
+  });
+
+  new Chart(document.getElementById('chartCV'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: cvMean,
+        backgroundColor: paletteLight,
+        borderColor: palette,
+        borderWidth: 2,
+        borderRadius: 10,
+        borderSkipped: false,
+      }]
+    },
+    options: commonOpts
+  });
+}
+</script>
+</body>
+</html>

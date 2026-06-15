@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: smartphone-addiction-classifier
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
